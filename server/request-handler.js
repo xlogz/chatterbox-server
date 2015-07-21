@@ -11,8 +11,9 @@ this file and include it in basic-server.js so that it actually works.
 *Hint* Check out the node module documentation at http://nodejs.org/api/modules.html.
 
 **************************************************************/
+var listMessages = {results: []};
 
-var requestHandler = function(request, response) {
+exports.requestHandler = function(request, response) {
   // Request and Response come from node's http module.
   //
   // They include information about both the incoming request, such as
@@ -27,8 +28,12 @@ var requestHandler = function(request, response) {
   // Adding more logging to your server can be an easy way to get passive
   // debugging help, but you should always be careful about leaving stray
   // console.logs in your code.
+
   console.log("Serving request type " + request.method + " for url " + request.url);
 
+  
+
+  
   // The outgoing status.
   var statusCode = 200;
 
@@ -39,21 +44,54 @@ var requestHandler = function(request, response) {
   //
   // You will need to change this if you are sending something
   // other than plain text, like JSON or HTML.
-  headers['Content-Type'] = "text/plain";
+  headers['Content-Type'] = "application/json";
 
   // .writeHead() writes to the request line and headers of the response,
   // which includes the status and all headers.
-  response.writeHead(statusCode, headers);
+  // response.writeHead(statusCode, headers);
 
   // Make sure to always call response.end() - Node may not send
   // anything back to the client until you do. The string you pass to
   // response.end() will be the body of the response - i.e. what shows
   // up in the browser.
   //
+
   // Calling .end "flushes" the response's internal buffer, forcing
   // node to actually send all the data over to the client.
-  response.end("Hello, World!");
+  validURLs = {"/classes/messages": null,
+              "/classes/room1": null};
+
+  if(validURLs[request.url] !== undefined){
+    if(request.method === "GET"){
+      response.writeHead(200, headers);
+      console.log("This is our stringified list Messages on GET request" + JSON.stringify(listMessages));
+      response.end(JSON.stringify(listMessages));
+    }
+
+    if(request.method === "POST"){
+      var data = "";
+      request.on('data', function(info){
+        console.log("This is the data being passed in", info.toString('utf-8'));
+        data += info;
+      });
+
+      request.on('end', function(){ 
+        response.writeHead(201, headers);
+        listMessages.results.push(JSON.parse(data));
+        response.end();
+
+       });
+    }
+    if(request.method === "OPTIONS"){
+      response.writeHead(200, headers);
+      response.end();
+    }
+ }else{
+  response.writeHead(404, headers);
+  response.end();
+ }
 };
+
 
 // These headers will allow Cross-Origin Resource Sharing (CORS).
 // This code allows this server to talk to websites that
